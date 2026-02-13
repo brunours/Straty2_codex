@@ -1,16 +1,19 @@
 /**
  * @file gameConfig.js
  * @description Phaser 3 game configuration object.
- * @version 0.2.0
+ * @version 0.3.0
  */
 
 import Phaser from 'phaser';
 import { BootScene } from '../scenes/BootScene.js';
+import { MainMenuScene } from '../scenes/MainMenuScene.js';
+import { GameSetupScene } from '../scenes/GameSetupScene.js';
+import { GameScene } from '../scenes/GameScene.js';
+import { UIScene } from '../scenes/UIScene.js';
 import { MapTestScene } from '../scenes/MapTestScene.js';
 
 /**
  * Main Phaser game configuration.
- * Scenes will be added here as they are implemented.
  */
 export const GAME_CONFIG = {
   type: Phaser.AUTO,
@@ -24,6 +27,10 @@ export const GAME_CONFIG = {
   },
   scene: [
     BootScene,
+    MainMenuScene,
+    GameSetupScene,
+    GameScene,
+    UIScene,
     MapTestScene
   ]
 };

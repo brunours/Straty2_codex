@@ -2,7 +2,7 @@
  * @file BootScene.js
  * @description Boot scene for asset preloading and initial setup.
  * This is the first scene loaded by Phaser.
- * @version 0.2.0
+ * @version 0.3.0
  */
 
 import Phaser from 'phaser';
@@ -17,7 +17,6 @@ export class BootScene extends Phaser.Scene {
    * Assets will be added as they are created in later phases.
    */
   preload() {
-    // Create a simple loading bar
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
@@ -39,14 +38,12 @@ export class BootScene extends Phaser.Scene {
   }
 
   /**
-   * Create the initial scene content.
-   * Shows title briefly then transitions to MapTestScene.
+   * Shows title briefly then transitions to MainMenuScene.
    */
   create() {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
-    // Title text
     this.add.text(width / 2, height / 2 - 60, 'STRATY2', {
       fontSize: '64px',
       fontFamily: 'Georgia, serif',
@@ -54,23 +51,21 @@ export class BootScene extends Phaser.Scene {
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    // Subtitle
     this.add.text(width / 2, height / 2 + 10, 'Bronze Age Strategy', {
       fontSize: '24px',
       fontFamily: 'Georgia, serif',
       color: '#8a8a6a'
     }).setOrigin(0.5);
 
-    // Version
-    this.add.text(width / 2, height / 2 + 60, 'v0.2.0 - Generating map...', {
+    this.add.text(width / 2, height / 2 + 60, 'v0.3.0', {
       fontSize: '16px',
       fontFamily: 'Arial, sans-serif',
       color: '#666666'
     }).setOrigin(0.5);
 
-    // Transition to map test after a brief delay
+    // Transition to main menu after a brief delay
     this.time.delayedCall(1500, () => {
-      this.scene.start('MapTestScene');
+      this.scene.start('MainMenuScene');
     });
   }
 }
