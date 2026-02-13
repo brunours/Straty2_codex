@@ -1,11 +1,12 @@
 /**
  * @file gameConfig.js
  * @description Phaser 3 game configuration object.
- * @version 0.1.0
+ * @version 0.2.0
  */
 
 import Phaser from 'phaser';
 import { BootScene } from '../scenes/BootScene.js';
+import { MapTestScene } from '../scenes/MapTestScene.js';
 
 /**
  * Main Phaser game configuration.
@@ -22,6 +23,7 @@ export const GAME_CONFIG = {
     autoCenter: Phaser.Scale.CENTER_BOTH
   },
   scene: [
-    BootScene
+    BootScene,
+    MapTestScene
   ]
 };

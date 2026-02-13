@@ -2,7 +2,7 @@
  * @file BootScene.js
  * @description Boot scene for asset preloading and initial setup.
  * This is the first scene loaded by Phaser.
- * @version 0.1.0
+ * @version 0.2.0
  */
 
 import Phaser from 'phaser';
@@ -40,7 +40,7 @@ export class BootScene extends Phaser.Scene {
 
   /**
    * Create the initial scene content.
-   * Will transition to MainMenuScene once it is implemented.
+   * Shows title briefly then transitions to MapTestScene.
    */
   create() {
     const width = this.cameras.main.width;
@@ -62,17 +62,15 @@ export class BootScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // Version
-    this.add.text(width / 2, height / 2 + 60, 'v0.1.0 - Project Setup', {
+    this.add.text(width / 2, height / 2 + 60, 'v0.2.0 - Generating map...', {
       fontSize: '16px',
       fontFamily: 'Arial, sans-serif',
       color: '#666666'
     }).setOrigin(0.5);
 
-    // Placeholder instruction
-    this.add.text(width / 2, height - 40, 'Game engine initialized. Phases 1-9 coming soon.', {
-      fontSize: '14px',
-      fontFamily: 'Arial, sans-serif',
-      color: '#555555'
-    }).setOrigin(0.5);
+    // Transition to map test after a brief delay
+    this.time.delayedCall(1500, () => {
+      this.scene.start('MapTestScene');
+    });
   }
 }
