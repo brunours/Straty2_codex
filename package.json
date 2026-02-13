@@ -1,0 +1,28 @@
+{
+  "name": "straty2",
+  "version": "0.1.0",
+  "description": "Bronze Age 4X hex strategy game built with Phaser 3",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "game",
+    "strategy",
+    "4x",
+    "hex",
+    "phaser",
+    "bronze-age"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.95.3",
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "vite": "^7.3.1"
+  }
+}
