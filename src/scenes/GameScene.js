@@ -14,7 +14,7 @@ import { GameState } from '../core/GameState.js';
 import { TurnManager } from '../core/TurnManager.js';
 import { GameplayCore } from '../core/GameplayCore.js';
 import { EventBus, EVENTS } from '../core/EventBus.js';
-import { MAP_SIZES, HEX_SIZE, ZOOM_MIN, ZOOM_MAX, ZOOM_STEP, PAN_SPEED } from '../config/constants.js';
+import { FOG_MODE, MAP_SIZES, HEX_SIZE, ZOOM_MIN, ZOOM_MAX, ZOOM_STEP, PAN_SPEED } from '../config/constants.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -48,17 +48,17 @@ export class GameScene extends Phaser.Scene {
     this.hexRenderer = new HexRenderer(this, GameState.hexMap);
 
     // Set up camera bounds
-    const bottomRight = HexGrid.axialToPixel(cols, rows);
-    const padding = HEX_SIZE * 4;
+    const worldBounds = GameState.hexMap.getWorldBounds();
+    const padding = HEX_SIZE * 3;
     this.cameras.main.setBounds(
-      -padding, -padding,
-      bottomRight.x + padding * 2,
-      bottomRight.y + padding * 2
+      worldBounds.left - padding,
+      worldBounds.top - padding,
+      worldBounds.width + padding * 2,
+      worldBounds.height + padding * 2
     );
 
     // Center camera on map
-    const center = HexGrid.axialToPixel(Math.floor(cols / 2), Math.floor(rows / 2));
-    this.cameras.main.centerOn(center.x, center.y);
+    this.cameras.main.centerOn(worldBounds.centerX, worldBounds.centerY);
 
     // Keyboard input for camera panning
     this._cursors = this.input.keyboard.createCursorKeys();
@@ -127,7 +127,11 @@ export class GameScene extends Phaser.Scene {
     // Initialize turn manager and start the game
     this.turnManager = new TurnManager();
     this.turnManager.startGame();
-    this._focusOnCurrentPlayer();
+    const centerOnTurnStart = GameState.settings.fogMode !== FOG_MODE.NONE;
+    this._focusOnCurrentPlayer(centerOnTurnStart);
+    if (!centerOnTurnStart) {
+      this._frameMap();
+    }
 
     // Initial render
     this._syncSelectionState();
@@ -292,7 +296,7 @@ export class GameScene extends Phaser.Scene {
     });
 
     EventBus.on(EVENTS.TURN_STARTED, ({ isAI, playerName }) => {
-      this._focusOnCurrentPlayer();
+      this._focusOnCurrentPlayer(GameState.settings.fogMode !== FOG_MODE.NONE);
       this._syncSelectionState();
       if (isAI && GameState.winnerIndex === null) {
         this._queueAITurn(playerName);
@@ -313,6 +317,10 @@ export class GameScene extends Phaser.Scene {
    */
   centerOnHex(q, r) {
     const { x, y } = HexGrid.axialToPixel(q, r);
+    this.centerOnWorld(x, y);
+  }
+
+  centerOnWorld(x, y) {
     this.cameras.main.centerOn(x, y);
     this._needsRedraw = true;
   }
@@ -470,20 +478,36 @@ export class GameScene extends Phaser.Scene {
     this._needsRedraw = true;
   }
 
-  _focusOnCurrentPlayer() {
+  _focusOnCurrentPlayer(centerCamera = true) {
     const playerUnits = GameState.getPlayerUnits(GameState.currentPlayerIndex);
     const scouts = playerUnits.filter((unit) => unit.type === 'scout');
     const focusUnit = scouts[0] || playerUnits[0] || null;
     if (focusUnit) {
-      this.centerOnHex(focusUnit.q, focusUnit.r);
+      if (centerCamera) {
+        this.centerOnHex(focusUnit.q, focusUnit.r);
+      }
       this._selectUnit(focusUnit, GameState.hexMap.getHex(focusUnit.q, focusUnit.r));
       return;
     }
 
     const cities = GameState.getPlayerCities(GameState.currentPlayerIndex);
     if (cities[0]) {
-      this.centerOnHex(cities[0].q, cities[0].r);
+      if (centerCamera) {
+        this.centerOnHex(cities[0].q, cities[0].r);
+      }
       this._selectCity(cities[0], GameState.hexMap.getHex(cities[0].q, cities[0].r));
     }
+  }
+
+  _frameMap() {
+    const bounds = GameState.hexMap.getWorldBounds();
+    const cam = this.cameras.main;
+    const fitPadding = HEX_SIZE * 4;
+    const zoomX = cam.width / (bounds.width + fitPadding * 2);
+    const zoomY = cam.height / (bounds.height + fitPadding * 2);
+    const zoom = Phaser.Math.Clamp(Math.min(zoomX, zoomY), ZOOM_MIN, ZOOM_MAX);
+    cam.setZoom(zoom);
+    cam.centerOn(bounds.centerX, bounds.centerY);
+    this._needsRedraw = true;
   }
 }

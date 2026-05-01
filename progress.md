@@ -8,8 +8,11 @@ Original prompt: Great, now the game does start from this URL. But it is quite p
 - Reworked the runtime flow so the match opens centered on the active player with an initial unit selected, plus visible command/message panels and richer HUD/selection details.
 - Fixed a stale-camera culling bug in the renderer that made the battlefield appear blank except for the selection overlay.
 - Switched the game to Phaser's canvas renderer for a simpler and more reliable 2D presentation during testing.
+- Reworked board projection so generated maps use a rectangular offset layout under the hood, with camera bounds, culling, and minimap extents derived from actual world-space hex bounds instead of raw `cols/rows`.
 - Validation completed with local preview + Playwright probes:
   - startup reaches playable map view with visible units/city/UI
   - human city production queues correctly and AI takes and ends its own turn
   - settler expansion can now found a second city after an early move
+  - no-fog start now renders as a rectangular full-map overview instead of a diagonal axial strip
+  - minimap now uses the same world bounds as the main camera and matches the full-board framing
 - Remaining for later full-spec phase: tech tree, fog-of-war logic, save/load, a deeper unit roster, better combat balancing, stronger AI strategy, city management depth, and polished art/audio.

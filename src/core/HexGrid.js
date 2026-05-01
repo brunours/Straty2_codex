@@ -10,6 +10,33 @@ import { HEX_SIZE, HEX_DIRECTIONS } from '../config/constants.js';
 
 export class HexGrid {
   /**
+   * Convert offset coordinates (rectangular column/row storage) to axial.
+   * Uses an odd-q vertical layout so the rendered map reads as a rectangle.
+   * @param {number} col
+   * @param {number} row
+   * @returns {{q: number, r: number}}
+   */
+  static offsetToAxial(col, row) {
+    return {
+      q: col,
+      r: row - Math.floor((col - (col & 1)) / 2)
+    };
+  }
+
+  /**
+   * Convert axial coordinates back to odd-q offset coordinates.
+   * @param {number} q
+   * @param {number} r
+   * @returns {{col: number, row: number}}
+   */
+  static axialToOffset(q, r) {
+    return {
+      col: q,
+      row: r + Math.floor((q - (q & 1)) / 2)
+    };
+  }
+
+  /**
    * Convert axial (q, r) to cube (q, r, s).
    * @param {number} q
    * @param {number} r

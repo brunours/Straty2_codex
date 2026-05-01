@@ -89,17 +89,14 @@ export class HexRenderer {
     this._destroyLabels(this._unitLabels);
     this._destroyLabels(this._cityLabels);
 
-    // Calculate visible hex range from camera bounds
-    const bounds = this._getVisibleBounds(camera);
+    const view = this._getVisibleWorldRect(camera);
 
     this.hexMap.forEachHex((hex) => {
-      // Viewport culling
-      if (hex.q < bounds.minQ || hex.q > bounds.maxQ ||
-          hex.r < bounds.minR || hex.r > bounds.maxR) {
+      const { x, y } = HexGrid.axialToPixel(hex.q, hex.r);
+      if (!this._isWorldPointVisible(x, y, view)) {
         return;
       }
 
-      const { x, y } = HexGrid.axialToPixel(hex.q, hex.r);
       const corners = HexGrid.getHexCorners(x, y);
 
       // Draw filled hex
@@ -134,7 +131,7 @@ export class HexRenderer {
       }
     });
 
-    this._drawReachableHexes(bounds);
+    this._drawReachableHexes(view);
 
     // Re-draw selection on top
     this._drawSelection();
@@ -198,13 +195,13 @@ export class HexRenderer {
     this._selectionGraphics.strokePath();
   }
 
-  _drawReachableHexes(bounds) {
+  _drawReachableHexes(view) {
     this._reachableHexes.forEach((hex) => {
-      if (hex.q < bounds.minQ || hex.q > bounds.maxQ || hex.r < bounds.minR || hex.r > bounds.maxR) {
+      const { x, y } = HexGrid.axialToPixel(hex.q, hex.r);
+      if (!this._isWorldPointVisible(x, y, view)) {
         return;
       }
 
-      const { x, y } = HexGrid.axialToPixel(hex.q, hex.r);
       const corners = HexGrid.getHexCorners(x, y);
       this._drawHexFilled(this._reachableGraphics, corners, MOVE_RANGE_COLOR, MOVE_RANGE_ALPHA);
     });
@@ -320,25 +317,20 @@ export class HexRenderer {
    * @param {Phaser.Cameras.Scene2D.Camera} camera
    * @returns {{minQ: number, maxQ: number, minR: number, maxR: number}}
    */
-  _getVisibleBounds(camera) {
-    const pad = this._cullPadding;
-
-    // Camera world bounds
-    const left = camera.worldView.x;
-    const right = left + camera.worldView.width;
-    const top = camera.worldView.y;
-    const bottom = top + camera.worldView.height;
-
-    // Convert corners to axial coords
-    const topLeft = HexGrid.pixelToAxial(left, top);
-    const bottomRight = HexGrid.pixelToAxial(right, bottom);
+  _getVisibleWorldRect(camera) {
+    const horizontalPad = HEX_SIZE * (1 + this._cullPadding);
+    const verticalPad = Math.sqrt(3) * HEX_SIZE / 2 * (1 + this._cullPadding);
 
     return {
-      minQ: Math.max(0, topLeft.q - pad),
-      maxQ: Math.min(this.hexMap.cols - 1, bottomRight.q + pad),
-      minR: Math.max(0, topLeft.r - pad),
-      maxR: Math.min(this.hexMap.rows - 1, bottomRight.r + pad)
+      left: camera.worldView.x - horizontalPad,
+      right: camera.worldView.x + camera.worldView.width + horizontalPad,
+      top: camera.worldView.y - verticalPad,
+      bottom: camera.worldView.y + camera.worldView.height + verticalPad
     };
+  }
+
+  _isWorldPointVisible(x, y, view) {
+    return x >= view.left && x <= view.right && y >= view.top && y <= view.bottom;
   }
 
   /**

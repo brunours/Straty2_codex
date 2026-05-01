@@ -64,22 +64,24 @@ export class MapGenerator {
    * @private
    */
   static _generateTerrain(map, cols, rows, elevNoise, moistNoise) {
-    for (let q = 0; q < cols; q++) {
-      for (let r = 0; r < rows; r++) {
+    for (let col = 0; col < cols; col++) {
+      for (let row = 0; row < rows; row++) {
+        const { q, r } = HexGrid.offsetToAxial(col, row);
+
         // Get raw noise values
         let elevation = elevNoise.fractal(
-          q * ELEVATION_SCALE,
-          r * ELEVATION_SCALE,
+          col * ELEVATION_SCALE,
+          row * ELEVATION_SCALE,
           4, 2.0, 0.5
         );
         const moisture = moistNoise.fractal(
-          q * MOISTURE_SCALE,
-          r * MOISTURE_SCALE,
+          col * MOISTURE_SCALE,
+          row * MOISTURE_SCALE,
           3, 2.0, 0.5
         );
 
         // Apply island mask (radial gradient to ensure ocean borders)
-        const islandMask = MapGenerator._getIslandMask(q, r, cols, rows);
+        const islandMask = MapGenerator._getIslandMask(col, row, cols, rows);
         elevation = elevation * islandMask;
 
         // Classify terrain

@@ -5,7 +5,7 @@
  */
 
 import { HexGrid } from './HexGrid.js';
-import { TERRAIN } from '../config/constants.js';
+import { HEX_SIZE, TERRAIN } from '../config/constants.js';
 import { TERRAIN_CONFIG } from '../config/terrainConfig.js';
 
 /**
@@ -35,6 +35,7 @@ export class HexMap {
     this.rows = rows;
     /** @type {Map<string, HexData>} */
     this._hexes = new Map();
+    this._worldBoundsCache = null;
   }
 
   /**
@@ -55,6 +56,7 @@ export class HexMap {
    */
   setHex(q, r, data) {
     this._hexes.set(HexGrid.key(q, r), data);
+    this._worldBoundsCache = null;
   }
 
   /**
@@ -132,6 +134,60 @@ export class HexMap {
    */
   getAllHexes() {
     return Array.from(this._hexes.values());
+  }
+
+  /**
+   * Compute the pixel bounds of the full rendered map.
+   * @param {number} [size=HEX_SIZE]
+   * @returns {{left:number,right:number,top:number,bottom:number,width:number,height:number,centerX:number,centerY:number}}
+   */
+  getWorldBounds(size = HEX_SIZE) {
+    if (this._worldBoundsCache?.size === size) {
+      return this._worldBoundsCache.bounds;
+    }
+
+    if (this._hexes.size === 0) {
+      const empty = {
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+        width: 0,
+        height: 0,
+        centerX: 0,
+        centerY: 0
+      };
+      this._worldBoundsCache = { size, bounds: empty };
+      return empty;
+    }
+
+    const verticalRadius = Math.sqrt(3) * size / 2;
+    let left = Infinity;
+    let right = -Infinity;
+    let top = Infinity;
+    let bottom = -Infinity;
+
+    this._hexes.forEach((hex) => {
+      const { x, y } = HexGrid.axialToPixel(hex.q, hex.r, size);
+      left = Math.min(left, x - size);
+      right = Math.max(right, x + size);
+      top = Math.min(top, y - verticalRadius);
+      bottom = Math.max(bottom, y + verticalRadius);
+    });
+
+    const bounds = {
+      left,
+      right,
+      top,
+      bottom,
+      width: right - left,
+      height: bottom - top,
+      centerX: (left + right) / 2,
+      centerY: (top + bottom) / 2
+    };
+
+    this._worldBoundsCache = { size, bounds };
+    return bounds;
   }
 
   /** @returns {number} Total number of hexes */

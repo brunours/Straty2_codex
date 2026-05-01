@@ -44,8 +44,10 @@ export class MinimapRenderer {
     // Scale factors (calculated on first render)
     this._scaleX = 1;
     this._scaleY = 1;
+    this._scale = 1;
     this._mapPixelWidth = 0;
     this._mapPixelHeight = 0;
+    this._worldBounds = null;
 
     // Click-to-jump interaction
     const zone = scene.add.zone(
@@ -69,23 +71,24 @@ export class MinimapRenderer {
     if (!GameState.hexMap) return;
 
     const hexMap = GameState.hexMap;
-    const cols = hexMap.cols;
-    const rows = hexMap.rows;
-
-    // Calculate map pixel extents
-    const topLeft = HexGrid.axialToPixel(0, 0);
-    const bottomRight = HexGrid.axialToPixel(cols - 1, rows - 1);
-    this._mapPixelWidth = bottomRight.x - topLeft.x;
-    this._mapPixelHeight = bottomRight.y - topLeft.y;
-    this._mapOriginX = topLeft.x;
-    this._mapOriginY = topLeft.y;
+    this._worldBounds = hexMap.getWorldBounds();
+    this._mapPixelWidth = this._worldBounds.width;
+    this._mapPixelHeight = this._worldBounds.height;
+    this._mapOriginX = this._worldBounds.left;
+    this._mapOriginY = this._worldBounds.top;
 
     // Scale to fit minimap
-    const pad = 4;
-    this._scaleX = (MINIMAP_WIDTH - pad * 2) / this._mapPixelWidth;
-    this._scaleY = (MINIMAP_HEIGHT - pad * 2) / this._mapPixelHeight;
-    this._padX = pad;
-    this._padY = pad;
+    const pad = 8;
+    const availableWidth = MINIMAP_WIDTH - pad * 2;
+    const availableHeight = MINIMAP_HEIGHT - pad * 2;
+    this._scale = Math.min(
+      availableWidth / Math.max(this._mapPixelWidth, 1),
+      availableHeight / Math.max(this._mapPixelHeight, 1)
+    );
+    this._scaleX = this._scale;
+    this._scaleY = this._scale;
+    this._padX = pad + (availableWidth - this._mapPixelWidth * this._scale) / 2;
+    this._padY = pad + (availableHeight - this._mapPixelHeight * this._scale) / 2;
 
     // Draw hex dots
     this._mapGraphics.clear();
@@ -109,15 +112,24 @@ export class MinimapRenderer {
    * @param {Phaser.Cameras.Scene2D.Camera} gameCamera - The GameScene's main camera
    */
   updateViewport(gameCamera) {
-    if (!this._rendered) return;
+    if (!this._rendered || !this._worldBounds) return;
 
     this._viewportGraphics.clear();
 
     const view = gameCamera.worldView;
-    const vx = this._x + this._padX + (view.x - this._mapOriginX) * this._scaleX;
-    const vy = this._y + this._padY + (view.y - this._mapOriginY) * this._scaleY;
-    const vw = view.width * this._scaleX;
-    const vh = view.height * this._scaleY;
+    const clippedLeft = Math.max(view.x, this._worldBounds.left);
+    const clippedTop = Math.max(view.y, this._worldBounds.top);
+    const clippedRight = Math.min(view.x + view.width, this._worldBounds.right);
+    const clippedBottom = Math.min(view.y + view.height, this._worldBounds.bottom);
+
+    if (clippedRight <= clippedLeft || clippedBottom <= clippedTop) {
+      return;
+    }
+
+    const vx = this._x + this._padX + (clippedLeft - this._mapOriginX) * this._scaleX;
+    const vy = this._y + this._padY + (clippedTop - this._mapOriginY) * this._scaleY;
+    const vw = (clippedRight - clippedLeft) * this._scaleX;
+    const vh = (clippedBottom - clippedTop) * this._scaleY;
 
     this._viewportGraphics.lineStyle(1, VIEWPORT_COLOR, VIEWPORT_ALPHA);
     this._viewportGraphics.strokeRect(vx, vy, vw, vh);
@@ -128,11 +140,11 @@ export class MinimapRenderer {
    * @private
    */
   _handleClick(pointer) {
-    if (!this._rendered) return;
+    if (!this._rendered || !this._worldBounds) return;
 
     // Convert click position to map world coordinates
-    const localX = pointer.x - this._x - this._padX;
-    const localY = pointer.y - this._y - this._padY;
+    const localX = Math.max(0, Math.min(pointer.x - this._x - this._padX, this._mapPixelWidth * this._scaleX));
+    const localY = Math.max(0, Math.min(pointer.y - this._y - this._padY, this._mapPixelHeight * this._scaleY));
 
     const worldX = this._mapOriginX + localX / this._scaleX;
     const worldY = this._mapOriginY + localY / this._scaleY;
@@ -140,7 +152,7 @@ export class MinimapRenderer {
     // Move the GameScene camera
     const gameScene = this.scene.scene.get('GameScene');
     if (gameScene) {
-      gameScene.cameras.main.centerOn(worldX, worldY);
+      gameScene.centerOnWorld(worldX, worldY);
     }
   }
 

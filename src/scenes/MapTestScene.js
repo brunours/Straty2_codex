@@ -37,17 +37,17 @@ export class MapTestScene extends Phaser.Scene {
     this.hexRenderer = new HexRenderer(this, this.hexMap);
 
     // Set up camera bounds
-    const bottomRight = HexGrid.axialToPixel(cols, rows);
-    const padding = HEX_SIZE * 4;
+    const worldBounds = this.hexMap.getWorldBounds();
+    const padding = HEX_SIZE * 3;
     this.cameras.main.setBounds(
-      -padding, -padding,
-      bottomRight.x + padding * 2,
-      bottomRight.y + padding * 2
+      worldBounds.left - padding,
+      worldBounds.top - padding,
+      worldBounds.width + padding * 2,
+      worldBounds.height + padding * 2
     );
 
     // Center camera
-    const center = HexGrid.axialToPixel(Math.floor(cols / 2), Math.floor(rows / 2));
-    this.cameras.main.centerOn(center.x, center.y);
+    this.cameras.main.centerOn(worldBounds.centerX, worldBounds.centerY);
 
     // Input: keyboard
     this._cursors = this.input.keyboard.createCursorKeys();
