@@ -23,20 +23,16 @@ export class SelectionPanel {
    */
   constructor(scene) {
     this.scene = scene;
-    const { height } = scene.cameras.main;
-
-    const x = PANEL_MARGIN;
-    const y = height - PANEL_HEIGHT - PANEL_MARGIN;
+    this.width = PANEL_WIDTH;
+    this.height = PANEL_HEIGHT;
+    this.x = PANEL_MARGIN;
+    this.y = scene.cameras.main.height - PANEL_HEIGHT - PANEL_MARGIN;
 
     // Background
     this._bg = scene.add.graphics();
-    this._bg.fillStyle(PANEL_BG, PANEL_ALPHA);
-    this._bg.fillRoundedRect(x, y, PANEL_WIDTH, PANEL_HEIGHT, 6);
-    this._bg.lineStyle(1, PANEL_BORDER, 1);
-    this._bg.strokeRoundedRect(x, y, PANEL_WIDTH, PANEL_HEIGHT, 6);
 
     // Title
-    this._titleText = scene.add.text(x + 12, y + 10, 'No Selection', {
+    this._titleText = scene.add.text(this.x + 12, this.y + 10, 'No Selection', {
       fontSize: '16px',
       fontFamily: 'Arial, sans-serif',
       color: '#c4a44a',
@@ -44,7 +40,7 @@ export class SelectionPanel {
     });
 
     // Info text
-    this._infoText = scene.add.text(x + 12, y + 34, '', {
+    this._infoText = scene.add.text(this.x + 12, this.y + 34, '', {
       fontSize: '13px',
       fontFamily: 'monospace',
       color: '#cccccc',
@@ -59,7 +55,23 @@ export class SelectionPanel {
     this._unsub.push(EventBus.on(EVENTS.CITY_SELECTED, (data) => this._showCityInfo(data.city, data.hex)));
     this._unsub.push(EventBus.on(EVENTS.SELECTION_CLEARED, () => this._clearInfo()));
 
+    this.layout(this.x, this.y);
     this._syncFromCurrentSelection();
+  }
+
+  layout(x, y) {
+    this.x = x;
+    this.y = y;
+
+    this._bg.clear();
+    this._bg.fillStyle(PANEL_BG, PANEL_ALPHA);
+    this._bg.fillRoundedRect(x, y, this.width, this.height, 6);
+    this._bg.lineStyle(1, PANEL_BORDER, 1);
+    this._bg.strokeRoundedRect(x, y, this.width, this.height, 6);
+
+    this._titleText.setPosition(x + 12, y + 10);
+    this._infoText.setPosition(x + 12, y + 34);
+    this._infoText.setWordWrapWidth(this.width - 24);
   }
 
   /**
@@ -151,6 +163,9 @@ export class SelectionPanel {
    */
   destroy() {
     this._unsub.forEach(fn => fn());
+    this._bg.destroy();
+    this._titleText.destroy();
+    this._infoText.destroy();
   }
 
   _syncFromCurrentSelection() {

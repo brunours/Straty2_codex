@@ -13,6 +13,10 @@ const game = new Phaser.Game(GAME_CONFIG);
 
 window.__straty2Game = game;
 
+window.addEventListener('resize', () => {
+  game.scale.resize(window.innerWidth, window.innerHeight);
+});
+
 window.render_game_to_text = () => {
   const scene = game.scene.getScene('GameScene');
   return scene?.renderGameToText?.() ?? JSON.stringify({ mode: 'loading' });

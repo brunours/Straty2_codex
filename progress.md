@@ -15,4 +15,8 @@ Original prompt: Great, now the game does start from this URL. But it is quite p
   - settler expansion can now found a second city after an early move
   - no-fog start now renders as a rectangular full-map overview instead of a diagonal axial strip
   - minimap now uses the same world bounds as the main camera and matches the full-board framing
+  - UI now fills the browser viewport instead of staying boxed into 1280x720
+  - command panel and campaign log moved into a collapsible left sidebar; selection info remains bottom-left and minimap stays bottom-right
+  - right mouse drag now pans the camera, and minimap rendering switched from dotted per-hex pixels to filled mini hexes without visible tile lattice
+  - camera framing now accounts for the open sidebar so default focus and map centering land in the unobscured play space
 - Remaining for later full-spec phase: tech tree, fog-of-war logic, save/load, a deeper unit roster, better combat balancing, stronger AI strategy, city management depth, and polished art/audio.

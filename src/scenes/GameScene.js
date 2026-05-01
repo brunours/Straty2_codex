@@ -29,6 +29,7 @@ export class GameScene extends Phaser.Scene {
     this._dragStartY = 0;
     this._aiTurnPending = false;
     this._victoryOverlay = null;
+    this._viewportOverlayOffsetX = 0;
   }
 
   create() {
@@ -79,9 +80,11 @@ export class GameScene extends Phaser.Scene {
       this._needsRedraw = true;
     });
 
-    // Middle-mouse drag pan
+    this.input.mouse?.disableContextMenu();
+
+    // Right-mouse drag pan
     this.input.on('pointerdown', (pointer) => {
-      if (pointer.middleButtonDown()) {
+      if (pointer.rightButtonDown()) {
         this._isDragging = true;
         this._dragStartX = pointer.x;
         this._dragStartY = pointer.y;
@@ -100,7 +103,7 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.input.on('pointerup', (pointer) => {
-      if (pointer.middleButtonReleased()) {
+      if (pointer.rightButtonReleased()) {
         this._isDragging = false;
       }
     });
@@ -116,6 +119,10 @@ export class GameScene extends Phaser.Scene {
     // Escape key to deselect
     this.input.keyboard.on('keydown-ESC', () => {
       this._clearSelection();
+    });
+
+    this.scale.on('resize', () => {
+      this._needsRedraw = true;
     });
 
     // Launch UIScene as parallel overlay
@@ -321,7 +328,20 @@ export class GameScene extends Phaser.Scene {
   }
 
   centerOnWorld(x, y) {
-    this.cameras.main.centerOn(x, y);
+    const adjustedX = x - this._viewportOverlayOffsetX / this.cameras.main.zoom;
+    this.cameras.main.centerOn(adjustedX, y);
+    this._needsRedraw = true;
+  }
+
+  setViewportOverlayOffset(offsetX = 0) {
+    const cam = this.cameras.main;
+    const delta = offsetX - this._viewportOverlayOffsetX;
+    if (delta === 0) {
+      return;
+    }
+
+    this._viewportOverlayOffsetX = offsetX;
+    cam.scrollX -= delta / cam.zoom;
     this._needsRedraw = true;
   }
 
@@ -507,7 +527,7 @@ export class GameScene extends Phaser.Scene {
     const zoomY = cam.height / (bounds.height + fitPadding * 2);
     const zoom = Phaser.Math.Clamp(Math.min(zoomX, zoomY), ZOOM_MIN, ZOOM_MAX);
     cam.setZoom(zoom);
-    cam.centerOn(bounds.centerX, bounds.centerY);
+    this.centerOnWorld(bounds.centerX, bounds.centerY);
     this._needsRedraw = true;
   }
 }
