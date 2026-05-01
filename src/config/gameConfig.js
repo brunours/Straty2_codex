@@ -16,7 +16,7 @@ import { MapTestScene } from '../scenes/MapTestScene.js';
  * Main Phaser game configuration.
  */
 export const GAME_CONFIG = {
-  type: Phaser.AUTO,
+  type: Phaser.CANVAS,
   width: 1280,
   height: 720,
   parent: 'game-container',

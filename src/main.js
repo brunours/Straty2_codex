@@ -10,3 +10,15 @@ import { GAME_CONFIG } from './config/gameConfig.js';
 
 /** Create and start the Phaser game instance */
 const game = new Phaser.Game(GAME_CONFIG);
+
+window.__straty2Game = game;
+
+window.render_game_to_text = () => {
+  const scene = game.scene.getScene('GameScene');
+  return scene?.renderGameToText?.() ?? JSON.stringify({ mode: 'loading' });
+};
+
+window.advanceTime = (ms = 16) => {
+  const scene = game.scene.getScene('GameScene');
+  scene?.advanceDebugTime?.(ms);
+};

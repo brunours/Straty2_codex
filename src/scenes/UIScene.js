@@ -9,7 +9,8 @@ import Phaser from 'phaser';
 import { HUDPanel } from '../ui/HUDPanel.js';
 import { SelectionPanel } from '../ui/SelectionPanel.js';
 import { MinimapRenderer } from '../ui/MinimapRenderer.js';
-import { GameState } from '../core/GameState.js';
+import { ActionPanel } from '../ui/ActionPanel.js';
+import { MessagePanel } from '../ui/MessagePanel.js';
 import { EventBus, EVENTS } from '../core/EventBus.js';
 
 export class UIScene extends Phaser.Scene {
@@ -18,6 +19,8 @@ export class UIScene extends Phaser.Scene {
     this.hudPanel = null;
     this.selectionPanel = null;
     this.minimap = null;
+    this.actionPanel = null;
+    this.messagePanel = null;
   }
 
   create() {
@@ -29,6 +32,9 @@ export class UIScene extends Phaser.Scene {
 
     // Minimap (bottom-right)
     this.minimap = new MinimapRenderer(this);
+
+    this.actionPanel = new ActionPanel(this);
+    this.messagePanel = new MessagePanel(this);
 
     // Render minimap once the map is ready
     this.time.delayedCall(100, () => {
@@ -62,6 +68,8 @@ export class UIScene extends Phaser.Scene {
     if (this.hudPanel) this.hudPanel.destroy();
     if (this.selectionPanel) this.selectionPanel.destroy();
     if (this.minimap) this.minimap.destroy();
+    if (this.actionPanel) this.actionPanel.destroy();
+    if (this.messagePanel) this.messagePanel.destroy();
     this._unsub.forEach(fn => fn());
   }
 }

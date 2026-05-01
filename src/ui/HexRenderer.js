@@ -8,6 +8,8 @@
 import { HexGrid } from '../core/HexGrid.js';
 import { HEX_SIZE } from '../config/constants.js';
 import { TERRAIN_CONFIG } from '../config/terrainConfig.js';
+import { GameState } from '../core/GameState.js';
+import { getCityLevel } from '../config/unitConfig.js';
 
 /** River overlay color */
 const RIVER_COLOR = 0x3399cc;
@@ -15,13 +17,17 @@ const RIVER_ALPHA = 0.6;
 
 /** Selection highlight */
 const SELECTION_COLOR = 0xffff00;
-const SELECTION_ALPHA = 0.4;
+const SELECTION_ALPHA = 0.18;
 const SELECTION_LINE_COLOR = 0xffff00;
-const SELECTION_LINE_WIDTH = 2;
+const SELECTION_LINE_WIDTH = 3;
 
 /** Hex border */
-const HEX_BORDER_COLOR = 0x000000;
-const HEX_BORDER_ALPHA = 0.15;
+const HEX_BORDER_COLOR = 0x08111f;
+const HEX_BORDER_ALPHA = 0.38;
+
+const MOVE_RANGE_COLOR = 0x8dd5ff;
+const MOVE_RANGE_ALPHA = 0.18;
+const CITY_CENTER_COLOR = 0xf4e2a0;
 
 export class HexRenderer {
   /**
@@ -35,19 +41,34 @@ export class HexRenderer {
     this.hexMap = hexMap;
 
     /** @type {Phaser.GameObjects.Graphics} Main hex graphics layer */
-    this._hexGraphics = scene.add.graphics();
+    this._hexGraphics = scene.add.graphics().setDepth(0);
 
     /** @type {Phaser.GameObjects.Graphics} River overlay layer */
-    this._riverGraphics = scene.add.graphics();
+    this._riverGraphics = scene.add.graphics().setDepth(1);
 
     /** @type {Phaser.GameObjects.Graphics} Selection highlight layer */
-    this._selectionGraphics = scene.add.graphics();
+    this._selectionGraphics = scene.add.graphics().setDepth(6);
 
     /** @type {Phaser.GameObjects.Graphics} Resource indicator layer */
-    this._resourceGraphics = scene.add.graphics();
+    this._resourceGraphics = scene.add.graphics().setDepth(2);
+
+    /** @type {Phaser.GameObjects.Graphics} City layer */
+    this._cityGraphics = scene.add.graphics().setDepth(4);
+
+    /** @type {Phaser.GameObjects.Graphics} Unit layer */
+    this._unitGraphics = scene.add.graphics().setDepth(5);
+
+    /** @type {Phaser.GameObjects.Graphics} Reachable hex overlay layer */
+    this._reachableGraphics = scene.add.graphics().setDepth(3);
 
     /** Currently selected hex */
     this._selectedHex = null;
+
+    /** @type {Array<{q:number,r:number}>} */
+    this._reachableHexes = [];
+
+    this._unitLabels = [];
+    this._cityLabels = [];
 
     /** Padding in hexes beyond viewport for smooth scrolling */
     this._cullPadding = 2;
@@ -58,9 +79,15 @@ export class HexRenderer {
    * @param {Phaser.Cameras.Scene2D.Camera} camera
    */
   render(camera) {
+    camera.preRender();
     this._hexGraphics.clear();
     this._riverGraphics.clear();
     this._resourceGraphics.clear();
+    this._cityGraphics.clear();
+    this._unitGraphics.clear();
+    this._reachableGraphics.clear();
+    this._destroyLabels(this._unitLabels);
+    this._destroyLabels(this._cityLabels);
 
     // Calculate visible hex range from camera bounds
     const bounds = this._getVisibleBounds(camera);
@@ -91,7 +118,23 @@ export class HexRenderer {
       if (hex.hasResource) {
         this._drawResourceIndicator(x, y, hex.resourceType);
       }
+
+      if (hex.cityId) {
+        const city = GameState.getCityAt(hex.q, hex.r);
+        if (city) {
+          this._drawCity(city, x, y);
+        }
+      }
+
+      if (hex.unitId) {
+        const unit = GameState.getUnitAt(hex.q, hex.r);
+        if (unit) {
+          this._drawUnit(unit, x, y);
+        }
+      }
     });
+
+    this._drawReachableHexes(bounds);
 
     // Re-draw selection on top
     this._drawSelection();
@@ -117,6 +160,10 @@ export class HexRenderer {
    */
   getSelection() {
     return this._selectedHex;
+  }
+
+  setReachableHexes(hexes) {
+    this._reachableHexes = hexes || [];
   }
 
   /**
@@ -149,6 +196,18 @@ export class HexRenderer {
     }
     this._selectionGraphics.closePath();
     this._selectionGraphics.strokePath();
+  }
+
+  _drawReachableHexes(bounds) {
+    this._reachableHexes.forEach((hex) => {
+      if (hex.q < bounds.minQ || hex.q > bounds.maxQ || hex.r < bounds.minR || hex.r > bounds.maxR) {
+        return;
+      }
+
+      const { x, y } = HexGrid.axialToPixel(hex.q, hex.r);
+      const corners = HexGrid.getHexCorners(x, y);
+      this._drawHexFilled(this._reachableGraphics, corners, MOVE_RANGE_COLOR, MOVE_RANGE_ALPHA);
+    });
   }
 
   /**
@@ -199,6 +258,62 @@ export class HexRenderer {
     this._resourceGraphics.fillCircle(cx, cy + HEX_SIZE * 0.4, size);
   }
 
+  _drawCity(city, cx, cy) {
+    const owner = GameState.getPlayer(city.playerIndex);
+    const size = HEX_SIZE * 0.38;
+    this._cityGraphics.fillStyle(owner?.color ?? CITY_CENTER_COLOR, 0.95);
+    this._cityGraphics.beginPath();
+    this._cityGraphics.moveTo(cx, cy - size);
+    this._cityGraphics.lineTo(cx + size, cy);
+    this._cityGraphics.lineTo(cx, cy + size);
+    this._cityGraphics.lineTo(cx - size, cy);
+    this._cityGraphics.closePath();
+    this._cityGraphics.fillPath();
+    this._cityGraphics.lineStyle(2, CITY_CENTER_COLOR, 0.95);
+    this._cityGraphics.strokePath();
+
+    const level = getCityLevel(city.level);
+    const label = this.scene.add.text(cx, cy - 3, `${city.population}`, {
+      fontSize: '14px',
+      fontFamily: 'Arial, sans-serif',
+      color: '#0b1020',
+      fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(4);
+    const subLabel = this.scene.add.text(cx, cy + 17, level.label[0], {
+      fontSize: '11px',
+      fontFamily: 'Arial, sans-serif',
+      color: '#f8e9b5',
+      fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(4);
+    this._cityLabels.push(label, subLabel);
+  }
+
+  _drawUnit(unit, cx, cy) {
+    const owner = GameState.getPlayer(unit.playerIndex);
+    const radius = HEX_SIZE * 0.28;
+    const activePlayer = unit.playerIndex === GameState.currentPlayerIndex;
+    this._unitGraphics.fillStyle(owner?.color ?? 0xffffff, 1);
+    this._unitGraphics.fillCircle(cx, cy, radius + (activePlayer ? 3 : 0));
+    this._unitGraphics.fillStyle(0x0b1220, 0.95);
+    this._unitGraphics.fillCircle(cx, cy, radius - 3);
+    this._unitGraphics.lineStyle(2, activePlayer ? 0xf4e2a0 : 0xd5d9e5, 1);
+    this._unitGraphics.strokeCircle(cx, cy, radius + (activePlayer ? 3 : 0));
+
+    const label = this.scene.add.text(cx, cy - 1, unit.symbol, {
+      fontSize: '14px',
+      fontFamily: 'Arial, sans-serif',
+      color: '#ffffff',
+      fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(5);
+    const hp = this.scene.add.text(cx, cy + 15, `${Math.max(0, unit.hp)}`, {
+      fontSize: '10px',
+      fontFamily: 'Arial, sans-serif',
+      color: '#d2fca2',
+      fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(5);
+    this._unitLabels.push(label, hp);
+  }
+
   /**
    * Calculate which hex range is visible in the current camera viewport.
    * @private
@@ -230,9 +345,19 @@ export class HexRenderer {
    * Clean up all graphics objects.
    */
   destroy() {
+    this._destroyLabels(this._unitLabels);
+    this._destroyLabels(this._cityLabels);
     this._hexGraphics.destroy();
     this._riverGraphics.destroy();
     this._selectionGraphics.destroy();
     this._resourceGraphics.destroy();
+    this._cityGraphics.destroy();
+    this._unitGraphics.destroy();
+    this._reachableGraphics.destroy();
+  }
+
+  _destroyLabels(labels) {
+    labels.forEach((label) => label.destroy());
+    labels.length = 0;
   }
 }

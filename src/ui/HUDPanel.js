@@ -80,12 +80,14 @@ export class HUDPanel {
     this._playerText.setColor(player.isAI ? '#ff8888' : '#88bbff');
 
     // Turn
-    this._turnText.setText(`Turn ${GameState.turnNumber}`);
+    const modeLabel = player.isAI ? 'AI turn' : 'Player turn';
+    this._turnText.setText(`Turn ${GameState.turnNumber} • ${modeLabel}`);
 
     // Resources
     const res = player.resources || { wood: 0, stone: 0, food: 0, metal: 0 };
+    const income = player.income || { wood: 0, stone: 0, food: 0, metal: 0 };
     this._resourceText.setText(
-      `Wood: ${res.wood}  Stone: ${res.stone}  Food: ${res.food}  Metal: ${res.metal}`
+      `Wood: ${res.wood} (+${income.wood})  Stone: ${res.stone} (+${income.stone})  Food: ${res.food} (+${income.food})  Metal: ${res.metal} (+${income.metal})`
     );
   }
 

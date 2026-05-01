@@ -54,6 +54,12 @@ class GameStateClass {
     /** @type {boolean} Whether the game is in progress */
     this.isGameActive = false;
 
+    /** @type {number|null} Winning player index once the match ends */
+    this.winnerIndex = null;
+
+    /** @type {Array<string>} Recent game messages for UI/debugging */
+    this.messageLog = [];
+
     /** @type {number} Next unit ID counter */
     this._nextUnitId = 1;
 
@@ -210,6 +216,8 @@ class GameStateClass {
       map: this.hexMap.toJSON(),
       units: unitsData,
       cities: citiesData,
+      winnerIndex: this.winnerIndex,
+      messageLog: [...this.messageLog],
       nextUnitId: this._nextUnitId,
       nextCityId: this._nextCityId
     };
@@ -226,6 +234,8 @@ class GameStateClass {
     this.settings = { ...json.settings };
     this.players = json.players.map(p => ({ ...p }));
     this.hexMap = HexMap.fromJSON(json.map);
+    this.winnerIndex = json.winnerIndex ?? null;
+    this.messageLog = Array.isArray(json.messageLog) ? [...json.messageLog] : [];
     this._nextUnitId = json.nextUnitId || 1;
     this._nextCityId = json.nextCityId || 1;
 
@@ -242,6 +252,15 @@ class GameStateClass {
     }
 
     this.isGameActive = true;
+  }
+
+  /**
+   * Add a message to the rolling game log.
+   * @param {string} message
+   */
+  pushMessage(message) {
+    this.messageLog.unshift(message);
+    this.messageLog = this.messageLog.slice(0, 8);
   }
 }
 

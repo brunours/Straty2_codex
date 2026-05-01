@@ -8,6 +8,7 @@
 import { GameState } from '../core/GameState.js';
 import { EventBus, EVENTS } from '../core/EventBus.js';
 import { TERRAIN_CONFIG } from '../config/terrainConfig.js';
+import { getCityLevel, getUnitConfig } from '../config/unitConfig.js';
 
 const PANEL_WIDTH = 240;
 const PANEL_HEIGHT = 160;
@@ -57,6 +58,8 @@ export class SelectionPanel {
     this._unsub.push(EventBus.on(EVENTS.UNIT_SELECTED, (data) => this._showUnitInfo(data.unit, data.hex)));
     this._unsub.push(EventBus.on(EVENTS.CITY_SELECTED, (data) => this._showCityInfo(data.city, data.hex)));
     this._unsub.push(EventBus.on(EVENTS.SELECTION_CLEARED, () => this._clearInfo()));
+
+    this._syncFromCurrentSelection();
   }
 
   /**
@@ -70,11 +73,14 @@ export class SelectionPanel {
     const lines = [
       `Terrain: ${terrain.label}`,
       `Move Cost: ${terrain.moveCost === Infinity ? 'Impassable' : terrain.moveCost}`,
-      `Defense: ${terrain.defenseBonus >= 0 ? '+' : ''}${terrain.defenseBonus}`
+      `Defense: ${terrain.defenseBonus >= 0 ? '+' : ''}${terrain.defenseBonus}`,
+      `Elevation: ${hex.elevation.toFixed(2)}`
     ];
 
     if (hex.hasRiver) lines.push('River: Yes');
     if (hex.hasResource) lines.push(`Resource: ${hex.resourceType}`);
+    if (hex.cityId) lines.push('Settlement: Present');
+    if (hex.unitId) lines.push('Unit: Present');
 
     this._infoText.setText(lines.join('\n'));
   }
@@ -87,14 +93,16 @@ export class SelectionPanel {
     const owner = GameState.getPlayer(unit.playerIndex);
     const ownerName = owner ? owner.name : 'Unknown';
 
-    this._titleText.setText(`${unit.type || 'Unit'} (${ownerName})`);
+    const config = getUnitConfig(unit.type);
+    this._titleText.setText(`${config?.label || unit.type || 'Unit'} (${ownerName})`);
 
     const lines = [
       `HP: ${unit.hp}/${unit.maxHp}`,
       `Atk: ${unit.attack}  Def: ${unit.defense}`,
       `Move: ${unit.movementRemaining}/${unit.movement}`,
       `Vision: ${unit.visionRange || 2}`,
-      `Pos: (${unit.q}, ${unit.r})`
+      `Pos: (${unit.q}, ${unit.r})`,
+      unit.canFoundCity ? 'Action: Found city on open land' : 'Action: Move or attack'
     ];
 
     if (unit.range && unit.range > 1) {
@@ -111,13 +119,18 @@ export class SelectionPanel {
   _showCityInfo(city, hex) {
     const owner = GameState.getPlayer(city.playerIndex);
     const ownerName = owner ? owner.name : 'Unknown';
-    const levels = ['Camp', 'Village', 'Town', 'City'];
+    const level = getCityLevel(city.level);
 
     this._titleText.setText(`${city.name || 'City'} (${ownerName})`);
 
     const lines = [
-      `Level: ${levels[city.level] || 'Camp'}`,
+      `Level: ${level.label}`,
       `Population: ${city.population || 0}`,
+      `Radius: ${level.radius}`,
+      `Food Bank: ${city.foodStockpile || 0}`,
+      city.production
+        ? `Training: ${getUnitConfig(city.production.unitType)?.label} (${city.production.turnsRemaining}t)`
+        : 'Training: Idle',
       `Pos: (${city.q}, ${city.r})`
     ];
 
@@ -138,5 +151,24 @@ export class SelectionPanel {
    */
   destroy() {
     this._unsub.forEach(fn => fn());
+  }
+
+  _syncFromCurrentSelection() {
+    if (GameState.selectionType === 'unit' && GameState.selectionData) {
+      this._showUnitInfo(GameState.selectionData, GameState.hexMap?.getHex(GameState.selectionData.q, GameState.selectionData.r));
+      return;
+    }
+
+    if (GameState.selectionType === 'city' && GameState.selectionData) {
+      this._showCityInfo(GameState.selectionData, GameState.hexMap?.getHex(GameState.selectionData.q, GameState.selectionData.r));
+      return;
+    }
+
+    if (GameState.selectionType === 'hex' && GameState.selectionData) {
+      this._showHexInfo(GameState.selectionData);
+      return;
+    }
+
+    this._clearInfo();
   }
 }

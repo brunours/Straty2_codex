@@ -7,6 +7,7 @@
 
 import { GameState } from './GameState.js';
 import { EventBus, EVENTS } from './EventBus.js';
+import { GameplayCore } from './GameplayCore.js';
 
 export class TurnManager {
   constructor() {
@@ -70,6 +71,8 @@ export class TurnManager {
   _startTurn() {
     const playerIndex = GameState.currentPlayerIndex;
     const player = GameState.getCurrentPlayer();
+
+    GameplayCore.processStartOfTurn(playerIndex);
 
     // Reset movement for new turn's units
     GameState.getPlayerUnits(playerIndex).forEach(unit => {

@@ -14,7 +14,7 @@ export const TERRAIN_CONFIG = {
   [TERRAIN.OCEAN]: {
     moveCost: Infinity,
     defenseBonus: 0,
-    color: 0x2266aa,
+    color: 0x2f6fbe,
     passable: false,
     naval: true,
     resource: null,
@@ -23,7 +23,7 @@ export const TERRAIN_CONFIG = {
   [TERRAIN.GRASSLAND]: {
     moveCost: 1,
     defenseBonus: 0,
-    color: 0x66aa44,
+    color: 0x7dbb4f,
     passable: true,
     naval: false,
     resource: 'food',
@@ -32,7 +32,7 @@ export const TERRAIN_CONFIG = {
   [TERRAIN.FOREST]: {
     moveCost: 2,
     defenseBonus: 1,
-    color: 0x337733,
+    color: 0x2f8c59,
     passable: true,
     naval: false,
     resource: 'wood',
@@ -41,7 +41,7 @@ export const TERRAIN_CONFIG = {
   [TERRAIN.MOUNTAIN]: {
     moveCost: 3,
     defenseBonus: 2,
-    color: 0x888888,
+    color: 0xa4a29d,
     passable: true,
     naval: false,
     resource: 'stone',
@@ -50,7 +50,7 @@ export const TERRAIN_CONFIG = {
   [TERRAIN.DESERT]: {
     moveCost: 2,
     defenseBonus: 0,
-    color: 0xccbb77,
+    color: 0xd7b96f,
     passable: true,
     naval: false,
     resource: null,
@@ -59,7 +59,7 @@ export const TERRAIN_CONFIG = {
   [TERRAIN.HILLS]: {
     moveCost: 2,
     defenseBonus: 1,
-    color: 0x99aa55,
+    color: 0xa8b85d,
     passable: true,
     naval: false,
     resource: 'metal',
@@ -68,7 +68,7 @@ export const TERRAIN_CONFIG = {
   [TERRAIN.SWAMP]: {
     moveCost: 3,
     defenseBonus: -1,
-    color: 0x557755,
+    color: 0x537f67,
     passable: true,
     naval: false,
     resource: null,
